@@ -3,6 +3,15 @@ require 'spec_helper'
 describe "Authentication" do
   subject { page }
 
+  describe "signed out" do
+    before { visit root_path }
+    it { should_not have_link('Users',     href: users_path) }
+    it { should_not have_link('Profile') }
+    it { should_not have_link('Sign out',  href: signout_path) }
+    it { should have_link('Sign in',       href: signin_path) }
+      
+  end
+
   describe "Signin page" do
     before { visit signin_path }
 
@@ -38,11 +47,31 @@ describe "Authentication" do
       it { should have_link('Profile',     href: user_path(user)) }
       it { should have_link('Sign out',    href: signout_path) }
       it { should_not have_link('Sign in', href: signin_path) }
+
+
+      describe "access new page" do
+        before { visit signup_path }
+        it { should have_content('Welcome to the Sample App') }
+      end
+
       describe "followed by signout" do
         before { click_link "Sign out" }
         it { should have_link('Sign in') }
 
       end
+    end
+  end
+
+  describe "new user access" do
+    let(:user) { FactoryGirl.create(:user) }
+    before { sign_in user, no_capybara: true }
+
+    describe "submit POST request to Users:create action" do
+      let(:params) do
+        { user: { admin: false, password: user.password, password_confirmation: user.password, name: user.name, email: user.email } }
+      end 
+      before { post users_path, params }
+      specify { expect(response).to redirect_to(root_url) }
     end
   end
 
